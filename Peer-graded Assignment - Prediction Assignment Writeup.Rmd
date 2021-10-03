@@ -1,0 +1,81 @@
+---
+title: 'Peer-graded Assignment: Prediction Assignment Writeup'
+author: "Eric Fruelda"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Prediction Assignment Writeup
+This is a Prediction Assignment Writeup that was written as a requirement for Practical Machine Learning Course in Coursera.
+
+## Getting the data
+The data for this assignment came from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har.
+
+## Loading R Libraries that will be used
+```{r}
+library(caret)
+```
+
+## Loading and Cleaning the data
+The data needs to be checked and explored for possible cleaning options.
+```{r}
+training <- read.csv("~/pml-training.csv", header=TRUE, na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv("~/pml-testing.csv", header=TRUE, na.strings=c("NA","#DIV/0!",""))
+```
+
+#### Checking the data
+```{r eval=TRUE}
+str(training)
+head(training[,1:10])
+tail(training[,1:10])
+```
+
+#### Removing NA columns
+```{r}
+training <- training[,colSums(is.na(training)) == 0]
+testing <- testing[,colSums(is.na(testing)) == 0]
+```
+
+#### Removing X, ID, Timestamp and Window columns
+```{r}
+training <- training[c(8:60)]
+testing <- testing[c(8:60)]
+```
+
+## Creating Partition for a Validation Dataset
+The dataset is quite big so we can create partition for a validation dataset. The seed is set to 13563 for reproducibility.
+```{r}
+set.seed(13563)
+subValid <- createDataPartition(y=training$classe, p=0.7, list=FALSE)
+training <- training[subValid,]
+validation <- training[-subValid,]
+```
+
+## Training the Data
+#### Training and prediction using Random Forest Algorithm
+```{r}
+modFitRF <- train(classe ~., method = "rf", data = training)
+predFitRF <- predict(modFitRF, validation)
+```
+
+#### Checking of Model on Validation Data using Confusion Matrix
+```{r eval=TRUE}
+confusionMatrix(predFitRF, as.factor(validation$classe))
+```
+
+## Prediction using Final Model on Testing Dataset
+Because the model has resulted to 100% accuracy on the validation dataset, we can use the model as the final model to make predictions to our Testing data.
+
+#### Plotting the decision tree
+``` {r eval=TRUE}
+plot(modFitRF$finalModel, main = "Random Forest Model")
+```
+
+#### Prediction on Testing Dataset
+```{r eval=TRUE}
+predFinal <- predict(modFitRF, testing)
+predFinal
+```
